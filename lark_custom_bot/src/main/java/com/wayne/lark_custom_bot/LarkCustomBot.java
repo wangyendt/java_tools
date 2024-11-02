@@ -1,19 +1,14 @@
-package com.wayne.larkbot;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
+package com.wayne.lark_custom_bot;
+
+import okhttp3.*;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -22,18 +17,22 @@ import java.util.logging.Logger;
 
 
 
-public class LarkBotApi {
-    private static final Logger logger = Logger.getLogger(LarkBotApi.class.getName());
+public class LarkCustomBot {
+    private static final Logger logger = Logger.getLogger(LarkCustomBot.class.getName());
     private final String webhook;
     private final String secret;
     private final String botAppId;
     private final String botSecret;
+    private final OkHttpClient client;
+    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+    private static final MediaType OCTET_STREAM = MediaType.get("application/octet-stream");
 
-    public LarkBotApi(String webhook, String secret, String botAppId, String botSecret) {
+    public LarkCustomBot(String webhook, String secret, String botAppId, String botSecret) {
         this.webhook = webhook;
         this.secret = secret;
         this.botAppId = botAppId;
         this.botSecret = botSecret;
+        this.client = new OkHttpClient();
     }
 
     public void sendText(String text, boolean mentionAll) {
@@ -110,18 +109,21 @@ public class LarkBotApi {
             String tenantAccessToken = getTenantAccessToken();
             String url = "https://open.feishu.cn/open-apis/im/v1/images";
 
-            try (CloseableHttpClient client = HttpClients.createDefault()) {
-                HttpPost httpPost = new HttpPost(url);
-                httpPost.setHeader("Authorization", "Bearer " + tenantAccessToken);
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("image_type", "message")
+                    .addFormDataPart("image", new File(filePath).getName(),
+                            RequestBody.create(new File(filePath), OCTET_STREAM))
+                    .build();
 
-                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-                builder.addTextBody("image_type", "message", ContentType.TEXT_PLAIN);
-                builder.addBinaryBody("image", new FileInputStream(filePath), ContentType.APPLICATION_OCTET_STREAM, new File(filePath).getName());
+            Request request = new Request.Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer " + tenantAccessToken)
+                    .post(requestBody)
+                    .build();
 
-                httpPost.setEntity(builder.build());
-
-                HttpResponse response = client.execute(httpPost);
-                String responseBody = EntityUtils.toString(response.getEntity());
+            try (Response response = client.newCall(request).execute()) {
+                String responseBody = response.body().string();
                 JSONObject jsonResponse = new JSONObject(responseBody);
 
                 if (jsonResponse.has("data") && jsonResponse.getJSONObject("data").has("image_key")) {
@@ -143,13 +145,14 @@ public class LarkBotApi {
         payload.put("app_id", botAppId);
         payload.put("app_secret", botSecret);
 
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeader("Content-Type", "application/json; charset=utf-8");
-            httpPost.setEntity(new StringEntity(payload.toString(), ContentType.APPLICATION_JSON));
+        RequestBody body = RequestBody.create(payload.toString(), JSON);
+        Request request = new Request.Builder()
+                .url(url)
+                .post(body)
+                .build();
 
-            HttpResponse response = client.execute(httpPost);
-            String responseBody = EntityUtils.toString(response.getEntity());
+        try (Response response = client.newCall(request).execute()) {
+            String responseBody = response.body().string();
             JSONObject jsonResponse = new JSONObject(responseBody);
 
             if (jsonResponse.has("tenant_access_token")) {
@@ -161,33 +164,38 @@ public class LarkBotApi {
     }
 
     private void sendRequest(JSONObject data) {
-        try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpPost httpPost = new HttpPost(webhook);
-            httpPost.setHeader("Content-Type", "application/json; charset=utf-8");
+        new Thread(() -> {
+            try {
+                logger.info("1");
+                if (!secret.isEmpty()) {
+                    long timestamp = System.currentTimeMillis() / 1000;
+                    data.put("timestamp", timestamp);
+                }
+                logger.info("12");
 
-            if (!secret.isEmpty()) {
-                long timestamp = System.currentTimeMillis() / 1000;
-                String signature = generateSignature(timestamp, secret);
-                data.put("timestamp", timestamp);
-                data.put("sign", signature);
+                RequestBody body = RequestBody.create(data.toString(), JSON);
+                Request request = new Request.Builder()
+                        .url(webhook)
+                        .post(body)
+                        .build();
+                logger.info("13");
+
+                try (Response response = client.newCall(request).execute()) {
+                    logger.info("14");
+                    String responseBody = response.body().string();
+                    logger.info("Response: " + responseBody);
+
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    if (jsonResponse.has("code")) {
+                        logger.warning("Message sending failed: " + responseBody);
+                    } else if (jsonResponse.optInt("StatusCode") == 0) {
+                        logger.info("Message sent successfully");
+                    }
+                }
+            } catch (Exception e) {
+                logger.severe("Failed to send message: " + e.getMessage());
             }
-
-            StringEntity entity = new StringEntity(data.toString(), StandardCharsets.UTF_8);
-            httpPost.setEntity(entity);
-
-            HttpResponse response = client.execute(httpPost);
-            String responseBody = EntityUtils.toString(response.getEntity());
-            logger.info("Response: " + responseBody);
-
-            JSONObject jsonResponse = new JSONObject(responseBody);
-            if (jsonResponse.has("code")) {
-                logger.warning("Message sending failed: " + responseBody);
-            } else if (jsonResponse.optInt("StatusCode") == 0) {
-                logger.info("Message sent successfully");
-            }
-        } catch (Exception e) {
-            logger.severe("Failed to send message: " + e.getMessage());
-        }
+        }).start();
     }
 
     private String generateSignature(long timestamp, String secret) throws Exception {

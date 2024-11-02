@@ -9,7 +9,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>lark_bot_api</module>
+        <module>lark_custom_bot</module>
     </modules>
 
     <properties>
@@ -17,4 +17,12 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/wangyendt/java_tools</url>
+        </repository>
+    </distributionManagement>
 </project>
