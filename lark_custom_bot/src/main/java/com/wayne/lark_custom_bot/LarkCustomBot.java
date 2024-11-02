@@ -166,22 +166,18 @@ public class LarkCustomBot {
     private void sendRequest(JSONObject data) {
         new Thread(() -> {
             try {
-                logger.info("1");
                 if (!secret.isEmpty()) {
                     long timestamp = System.currentTimeMillis() / 1000;
                     data.put("timestamp", timestamp);
                 }
-                logger.info("12");
 
                 RequestBody body = RequestBody.create(data.toString(), JSON);
                 Request request = new Request.Builder()
                         .url(webhook)
                         .post(body)
                         .build();
-                logger.info("13");
 
                 try (Response response = client.newCall(request).execute()) {
-                    logger.info("14");
                     String responseBody = response.body().string();
                     logger.info("Response: " + responseBody);
 
