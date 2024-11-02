@@ -10,6 +10,7 @@
 
     <modules>
         <module>lark_custom_bot</module>
+        <module>lark_bot</module>
     </modules>
 
     <properties>
