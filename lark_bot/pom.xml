@@ -69,6 +69,9 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                        </configuration>
 						<!-- <configuration>
 							<createDependencyReducedPom>false</createDependencyReducedPom>
 							<transformers>
