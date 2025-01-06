@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Java Tools 测试"
+            android:textSize="24sp"
+            android:layout_marginBottom="24dp"/>
+
+        <!-- Lark Bot 测试部分 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lark Bot 测试"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnTestLarkBot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="发送文本消息"/>
+
+        <Button
+            android:id="@+id/btnTestLarkBotImage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="发送图片消息"/>
+
+        <!-- Lark Custom Bot 测试部分 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lark Custom Bot 测试"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnTestLarkCustomBot"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="发送自定义消息"/>
+
+        <!-- Aliyun OSS 测试部分 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Aliyun OSS 测试"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnTestOSSUpload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="上传文件"/>
+
+        <Button
+            android:id="@+id/btnTestOSSDownload"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="下载文件"/>
+
+        <Button
+            android:id="@+id/btnTestOSSList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="测试OSS列举"/>
+
+        <Button
+            android:id="@+id/btnTestOSSDelete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="测试OSS删除"/>
+
+        <!-- 日志显示区域 -->
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="14sp"
+            android:fontFamily="monospace"/>
+
+    </LinearLayout>
+</ScrollView>

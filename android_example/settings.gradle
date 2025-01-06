@@ -1,0 +1,33 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            name = "Java Tools"
+            url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
+            credentials {
+                username = "wangyendt"
+                password = "xxx"
+            }
+        }
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            name = "Java Tools"
+            url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
+            credentials {
+                username = "wangyendt"
+                password = "xxx"
+            }
+        }
+    }
+}
+
+rootProject.name = "android_example"
+include ':app'

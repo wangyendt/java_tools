@@ -1,0 +1,55 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.wayne.android_example'
+    compileSdkVersion 33
+    defaultConfig {
+        applicationId "com.wayne.android_example"
+        minSdkVersion 26
+        targetSdkVersion 33
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.9.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    
+    implementation('com.wayne:lark-custom-bot:1.1.1')
+    implementation('com.wayne:lark-bot:1.0.6')
+    implementation('com.wayne:aliyun_oss:1.1.1')
+
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'org.json:json:20230227'
+    implementation 'com.google.code.gson:gson:2.10.1'
+//    implementation 'com.squareup.okio:3.6.0'
+//    implementation 'commons-codec:1.15'
+//    implementation 'com.fasterxml.jackson.dataformat:2.13.0'
+//    implementation files('../lark_bot/target/lark_bot-1.0.0.jar')
+//    implementation files('../lark_custom_bot/target/lark_custom_bot-1.0.0.jar')
+//    implementation files('../aliyun_oss/target/aliyun_oss-1.0.0.jar')
+    
+    // 添加这些工具依赖的第三方库
+//    implementation 'commons-codec:commons-codec:1.15'
+//    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+//    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.13.0'
+
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
+    androidTestImplementation 'androidx.test:rules:1.5.0'
+    testImplementation 'junit:junit:4.13.2'
+}
