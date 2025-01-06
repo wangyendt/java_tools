@@ -7,8 +7,8 @@ pluginManagement {
             name = "Java Tools"
             url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
             credentials {
-                username = "wangyendt"
-                password = "xxx"
+                username = providers.gradleProperty("GITHUB_USERNAME").getOrElse(System.getenv("GITHUB_USERNAME") ?: "")
+                password = providers.gradleProperty("GITHUB_TOKEN").getOrElse(System.getenv("GITHUB_TOKEN") ?: "")
             }
         }
     }
@@ -22,8 +22,8 @@ dependencyResolutionManagement {
             name = "Java Tools"
             url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
             credentials {
-                username = "wangyendt"
-                password = "xxx"
+                username = providers.gradleProperty("GITHUB_USERNAME").getOrElse(System.getenv("GITHUB_USERNAME") ?: "")
+                password = providers.gradleProperty("GITHUB_TOKEN").getOrElse(System.getenv("GITHUB_TOKEN") ?: "")
             }
         }
     }

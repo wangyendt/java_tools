@@ -7,8 +7,8 @@ buildscript {
             name = "Java Tools"
             url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
             credentials {
-                username = "wangyendt"
-                password = "xxx"
+                username = rootProject.findProperty("GITHUB_USERNAME") ?: System.getenv("GITHUB_USERNAME")
+                password = rootProject.findProperty("GITHUB_TOKEN") ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }

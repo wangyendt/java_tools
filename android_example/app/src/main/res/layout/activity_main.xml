@@ -1,95 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="12sp" />
+
+    </ScrollView>
 
     <LinearLayout
+        android:id="@+id/buttonContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Java Tools 测试"
-            android:textSize="24sp"
-            android:layout_marginBottom="24dp"/>
-
-        <!-- Lark Bot 测试部分 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lark Bot 测试"
-            android:textSize="18sp"
-            android:layout_marginTop="16dp"/>
+        android:orientation="vertical">
 
         <Button
             android:id="@+id/btnTestLarkBot"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="发送文本消息"/>
+            android:text="测试 Lark Bot" />
 
         <Button
             android:id="@+id/btnTestLarkBotImage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="发送图片消息"/>
-
-        <!-- Lark Custom Bot 测试部分 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Lark Custom Bot 测试"
-            android:textSize="18sp"
-            android:layout_marginTop="16dp"/>
+            android:text="测试 Lark Bot 图片" />
 
         <Button
             android:id="@+id/btnTestLarkCustomBot"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="发送自定义消息"/>
-
-        <!-- Aliyun OSS 测试部分 -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Aliyun OSS 测试"
-            android:textSize="18sp"
-            android:layout_marginTop="16dp"/>
+            android:text="测试 Lark Custom Bot" />
 
         <Button
             android:id="@+id/btnTestOSSUpload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="上传文件"/>
+            android:text="测试 OSS 上传" />
 
         <Button
             android:id="@+id/btnTestOSSDownload"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="下载文件"/>
+            android:text="测试 OSS 下载" />
 
         <Button
             android:id="@+id/btnTestOSSList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="测试OSS列举"/>
+            android:text="测试 OSS 列表" />
 
         <Button
             android:id="@+id/btnTestOSSDelete"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="测试OSS删除"/>
+            android:text="测试 OSS 删除" />
 
-        <!-- 日志显示区域 -->
-        <TextView
-            android:id="@+id/tvLog"
+        <Button
+            android:id="@+id/btnTestOpenAI"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:textSize="14sp"
-            android:fontFamily="monospace"/>
+            android:text="测试 OpenAI 聊天" />
 
     </LinearLayout>
-</ScrollView>
+
+</LinearLayout>

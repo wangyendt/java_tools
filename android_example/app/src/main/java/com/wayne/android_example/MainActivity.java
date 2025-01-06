@@ -88,6 +88,12 @@ public class MainActivity extends AppCompatActivity {
 
         Button btnTestOSSDelete = findViewById(R.id.btnTestOSSDelete);
         btnTestOSSDelete.setOnClickListener(v -> testOSSDelete());
+
+        Button btnTestOpenAI = findViewById(R.id.btnTestOpenAI);
+        btnTestOpenAI.setOnClickListener(v -> {
+            ChatDialog dialog = new ChatDialog(this);
+            dialog.show();
+        });
     }
 
     private void checkPermissions() {
