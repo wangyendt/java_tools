@@ -54,42 +54,90 @@ public class PostContent {
         return atContent;
     }
 
+    public Map<String, Object> makeImageContent(String imageKey) {
+        Map<String, Object> imageContent = new HashMap<>();
+        imageContent.put("tag", "img");
+        imageContent.put("image_key", imageKey);
+        return imageContent;
+    }
+
+    public Map<String, Object> makeMediaContent(String fileKey, String imageKey) {
+        Map<String, Object> mediaContent = new HashMap<>();
+        mediaContent.put("tag", "media");
+        mediaContent.put("image_key", imageKey);
+        mediaContent.put("file_key", fileKey);
+        return mediaContent;
+    }
+
+    public Map<String, Object> makeEmojiContent(String emojiType) {
+        Map<String, Object> emojiContent = new HashMap<>();
+        emojiContent.put("tag", "emotion");
+        emojiContent.put("emoji_type", emojiType);
+        return emojiContent;
+    }
+
+    public Map<String, Object> makeHrContent() {
+        Map<String, Object> hrContent = new HashMap<>();
+        hrContent.put("tag", "hr");
+        return hrContent;
+    }
+
+    public Map<String, Object> makeCodeBlockContent(String language, String text) {
+        Map<String, Object> codeContent = new HashMap<>();
+        codeContent.put("tag", "code_block");
+        codeContent.put("language", language);
+        codeContent.put("text", text);
+        return codeContent;
+    }
+
+    public Map<String, Object> makeMarkdownContent(String mdText) {
+        Map<String, Object> markdownContent = new HashMap<>();
+        markdownContent.put("tag", "md");
+        markdownContent.put("text", mdText);
+        return markdownContent;
+    }
+
+    @SuppressWarnings("unchecked")
     public void addContentInLine(Map<String, Object> content) {
-        List<List<Map<String, Object>>> contents = getContentsList();
-        if (contents.isEmpty()) {
-            contents.add(new ArrayList<>());
-        }
-        contents.get(contents.size() - 1).add(content);
-    }
-
-    public void addContentsInLine(List<Map<String, Object>> contents) {
-        List<List<Map<String, Object>>> existingContents = getContentsList();
-        if (existingContents.isEmpty()) {
-            existingContents.add(new ArrayList<>());
-        }
-        existingContents.get(existingContents.size() - 1).addAll(contents);
-    }
-
-    public void addContentInNewLine(Map<String, Object> content) {
-        List<List<Map<String, Object>>> contents = getContentsList();
-        List<Map<String, Object>> newLine = new ArrayList<>();
-        newLine.add(content);
-        contents.add(newLine);
-    }
-
-    public void addContentsInNewLine(List<Map<String, Object>> contents) {
-        List<List<Map<String, Object>>> existingContents = getContentsList();
-        existingContents.add(contents);
-    }
-
-    private List<List<Map<String, Object>>> getContentsList() {
-        Map<String, Object> zhCnContent = content.get("zh_cn");
+        Map<String, Object> zhCnContent = this.content.get("zh_cn");
         if (zhCnContent != null) {
-            Object contentObj = zhCnContent.get("content");
-            if (contentObj instanceof List) {
-                return (List<List<Map<String, Object>>>) contentObj;
+            List<List<Map<String, Object>>> contentList = (List<List<Map<String, Object>>>) zhCnContent.get("content");
+            if (contentList.isEmpty()) {
+                contentList.add(new ArrayList<>());
             }
+            contentList.get(contentList.size() - 1).add(content);
         }
-        return new ArrayList<>();
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addContentsInLine(List<Map<String, Object>> contents) {
+        Map<String, Object> zhCnContent = this.content.get("zh_cn");
+        if (zhCnContent != null) {
+            List<List<Map<String, Object>>> contentList = (List<List<Map<String, Object>>>) zhCnContent.get("content");
+            if (contentList.isEmpty()) {
+                contentList.add(new ArrayList<>());
+            }
+            contentList.get(contentList.size() - 1).addAll(contents);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addContentInNewLine(Map<String, Object> content) {
+        Map<String, Object> zhCnContent = this.content.get("zh_cn");
+        if (zhCnContent != null) {
+            List<List<Map<String, Object>>> contentList = (List<List<Map<String, Object>>>) zhCnContent.get("content");
+            List<Map<String, Object>> newLine = new ArrayList<>();
+            newLine.add(content);
+            contentList.add(newLine);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public void addContentsInNewLine(List<Map<String, Object>> contents) {
+        Map<String, Object> zhCnContent = this.content.get("zh_cn");
+        if (zhCnContent != null) {
+            List<List<Map<String, Object>>> contentList = (List<List<Map<String, Object>>>) zhCnContent.get("content");
+            contentList.add(contents);
+        }
     }
 }
