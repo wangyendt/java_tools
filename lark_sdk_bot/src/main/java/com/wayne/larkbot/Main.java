@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 public class Main {
-    private static final String APP_ID = "cli_a785d99779791013";
-    private static final String APP_SECRET = "bt1JJe4iOy3L7ifsSZsOddDm5xV4xjAT";
+    private static final String APP_ID = "xxx";
+    private static final String APP_SECRET = "xxx";
     // private static final String TEST_OPEN_ID = "ou_2d8624f6d14876755a3d2071385d02ab";
     
     public static void main(String[] args) {

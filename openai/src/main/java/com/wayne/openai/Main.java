@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
-    private static final String API_KEY = "sk-4556e299ea3b4401b87adcbda3cebb19";
+    private static final String API_KEY = "xxx";
     private static final String BASE_URL = "https://api.deepseek.com/v1";
 
     public static void main(String[] args) {

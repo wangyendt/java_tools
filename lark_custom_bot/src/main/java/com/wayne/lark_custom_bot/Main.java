@@ -7,10 +7,10 @@ import org.json.JSONObject;
 public class Main {
     public static void main(String[] args) {
         // 替换为您的实际配置
-        String webhook = "https://open.feishu.cn/open-apis/bot/v2/hook/4f6c295c-b3d0-4d76-9757-8b423658ae41";
-        String secret = "";
-        String botAppId = "cli_a785d99779791013";
-        String botSecret = "bt1JJe4iOy3L7ifsSZsOddDm5xV4xjAT";
+        String webhook = "xxx";
+        String secret = "xxx";
+        String botAppId = "xxx";
+        String botSecret = "xxx";
 
         LarkCustomBot bot = new LarkCustomBot(webhook, secret, botAppId, botSecret);
         
