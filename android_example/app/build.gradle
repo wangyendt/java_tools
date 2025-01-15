@@ -29,7 +29,7 @@ dependencies {
     
     implementation('com.wayne:lark-custom-bot:1.1.1')
     implementation('com.wayne:lark-bot:1.0.6')
-    implementation('com.wayne:aliyun_oss:1.1.1')
+    implementation('com.wayne:aliyun_oss:1.1.2')
     implementation('com.wayne:openai:1.0.0')
 
     // Jackson 依赖

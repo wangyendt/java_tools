@@ -28,7 +28,25 @@ cd [module_name]
 mvn clean package
 ```
 
-### 3. 模块配置说明
+### 3. 运行命令
+
+```bash
+# 方式1：使用maven exec插件运行（在对应模块目录下执行）
+cd [module_name]
+mvn exec:java
+
+# 方式2：直接运行jar包
+cd [module_name]
+java -jar target/[module_name]-[version].jar
+
+# 示例：运行aliyun_oss模块
+cd aliyun_oss
+mvn exec:java
+# 或
+java -jar target/aliyun_oss-1.1.1.jar
+```
+
+### 4. 模块配置说明
 
 #### lark_sdk_bot
 需要在 `Main.java` 中配置：

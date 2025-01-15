@@ -406,4 +406,64 @@ public class AliyunOSS {
         }
         return allSuccess;
     }
+
+    public String readFileContent(String key) throws IOException {
+        String date = getDate();
+        String authorization = getAuthorizationHeader("GET", "", "", date, key);
+
+        // 检查是否为文件夹（通过检查是否以'/'结尾）
+        if (key.endsWith("/")) {
+            printWarning("指定的键值 '" + key + "' 是一个文件夹");
+            return null;
+        }
+
+        // 检查是否有子文件（通过列举带有分隔符的对象）
+        String date2 = getDate();
+        String authorization2 = getAuthorizationHeader("GET", "", "", date2, "");
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(getBaseURL() + "/").newBuilder()
+                .addQueryParameter("prefix", key + "/")
+                .addQueryParameter("delimiter", "/")
+                .addQueryParameter("max-keys", "1");
+
+        Request listRequest = new Request.Builder()
+                .url(urlBuilder.build())
+                .get()
+                .addHeader("Date", date2)
+                .addHeader("Authorization", authorization2)
+                .build();
+
+        try (Response listResponse = client.newCall(listRequest).execute()) {
+            if (listResponse.isSuccessful() && listResponse.body() != null) {
+                String xmlString = listResponse.body().string();
+                if (xmlString.contains("<Contents>")) {
+                    printWarning("指定的键值 '" + key + "' 是一个文件夹");
+                    return null;
+                }
+            }
+        }
+
+        // 获取文件内容
+        Request request = new Request.Builder()
+                .url(getBaseURL() + "/" + key)
+                .get()
+                .addHeader("Date", date)
+                .addHeader("Authorization", authorization)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful() && response.body() != null) {
+                String content = response.body().string();
+                printInfo("成功读取文件内容：" + key);
+                return content;
+            } else {
+                String errorMessage = response.body() != null ? response.body().string() : "未知错误";
+                if (response.code() == 404) {
+                    printWarning("文件不存在：" + key);
+                } else {
+                    printWarning("读取文件失败：" + errorMessage);
+                }
+                return null;
+            }
+        }
+    }
 } 

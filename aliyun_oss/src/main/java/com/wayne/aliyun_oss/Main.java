@@ -84,8 +84,28 @@ public class Main {
                 System.out.println("  " + (item.isDirectory() ? "📁" : "📄") + " " + item.getName() + (item.isDirectory() ? "/" : ""));
             }
 
-            // 7. 下载文件
-            System.out.println("\n7. 测试下载文件");
+            // 7. 测试读取文件内容
+            System.out.println("\n7. 测试读取文件内容");
+            // 读取文本文件
+            String content = oss.readFileContent("test.txt");
+            if (content != null) {
+                System.out.println("test.txt 的内容：\n" + content);
+            }
+
+            // 尝试读取文件夹（应该会失败）
+            content = oss.readFileContent("test_dir/");
+            if (content == null) {
+                System.out.println("成功检测到文件夹，拒绝读取");
+            }
+
+            // 读取不存在的文件
+            content = oss.readFileContent("nonexistent.txt");
+            if (content == null) {
+                System.out.println("成功检测到文件不存在");
+            }
+
+            // 8. 下载文件
+            System.out.println("\n8. 测试下载文件");
             File downloadDir = new File("downloads");
             if (!downloadDir.exists()) {
                 downloadDir.mkdirs();
@@ -103,29 +123,29 @@ public class Main {
             }
             oss.downloadFile("1/test.txt", test1File.getAbsolutePath());
 
-            // 8. 下载目录
-            System.out.println("\n8. 测试下载目录");
+            // 9. 下载目录
+            System.out.println("\n9. 测试下载目录");
             File testDirDownload = new File(downloadDir, "test_dir");
             if (!testDirDownload.exists()) {
                 testDirDownload.mkdirs();
             }
             oss.downloadDirectory("test_dir/", testDirDownload.getAbsolutePath());
 
-            // 9. 下载指定前缀的文件
-            System.out.println("\n9. 测试下载指定前缀的文件");
+            // 10. 下载指定前缀的文件
+            System.out.println("\n10. 测试下载指定前缀的文件");
             File prefix2Dir = new File(downloadDir, "2");
             if (!prefix2Dir.exists()) {
                 prefix2Dir.mkdirs();
             }
             oss.downloadFilesWithPrefix("2/", prefix2Dir.getAbsolutePath());
 
-            // 10. 删除文件
-            System.out.println("\n10. 测试删除文件");
+            // 11. 删除文件
+            System.out.println("\n11. 测试删除文件");
             oss.deleteFile("test.txt");
             oss.deleteFile("hello.txt");
 
-            // 11. 删除指定前缀的文件
-            System.out.println("\n11. 测试删除指定前缀的文件");
+            // 12. 删除指定前缀的文件
+            System.out.println("\n12. 测试删除指定前缀的文件");
             oss.deleteFilesWithPrefix("1/");
             oss.deleteFilesWithPrefix("2/");
             oss.deleteFilesWithPrefix("test_dir/");

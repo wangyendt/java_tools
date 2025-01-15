@@ -535,7 +535,27 @@ public class MainActivity extends AppCompatActivity {
                     log("  " + (item.isDirectory() ? "📁" : "📄") + " " + item.getName() + (item.isDirectory() ? "/" : ""));
                 }
 
-                log("列举测试完成");
+                // 7. 测试读取文件内容
+                log("\n7. 测试读取文件内容");
+                // 读取文本文件
+                String content = oss.readFileContent("test.txt");
+                if (content != null) {
+                    log("test.txt 的内容：\n" + content);
+                }
+
+                // 尝试读取文件夹（应该会失败）
+                content = oss.readFileContent("test_dir/");
+                if (content == null) {
+                    log("成功检测到文件夹，拒绝读取");
+                }
+
+                // 读取不存在的文件
+                content = oss.readFileContent("nonexistent.txt");
+                if (content == null) {
+                    log("成功检测到文件不存在");
+                }
+
+                log("列举和读取测试完成");
             } catch (IOException e) {
                 log("测试失败: " + e.getMessage());
                 e.printStackTrace();
