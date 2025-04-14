@@ -186,15 +186,38 @@ public class AliyunOSS {
     }
 
     public boolean downloadFile(String key) throws IOException {
-        return downloadFile(key, null);
+        return downloadFile(key, null, false);
     }
 
     public boolean downloadFile(String key, String rootDir) throws IOException {
-        String savePath = rootDir != null ? Paths.get(rootDir, key).toString() : key;
+        return downloadFile(key, rootDir, false);
+    }
+
+    public boolean downloadFile(String key, String rootDir, boolean useBasename) throws IOException {
+        String savePath;
+        
+        if (rootDir != null) {
+            if (useBasename) {
+                // 仅使用键值的基本名称，忽略路径
+                String basename = Paths.get(key).getFileName().toString();
+                savePath = Paths.get(rootDir, basename).toString();
+            } else {
+                // 使用完整的键值路径
+                savePath = Paths.get(rootDir, key).toString();
+            }
+        } else {
+            if (useBasename) {
+                savePath = Paths.get(key).getFileName().toString();
+            } else {
+                savePath = key;
+            }
+        }
 
         // 创建必要的目录
         Path savePathObj = Paths.get(savePath);
-        Files.createDirectories(savePathObj.getParent());
+        if (savePathObj.getParent() != null) {
+            Files.createDirectories(savePathObj.getParent());
+        }
 
         String date = getDate();
         String authorization = getAuthorizationHeader("GET", "", "", date, key);
@@ -326,6 +349,10 @@ public class AliyunOSS {
     }
 
     public boolean downloadDirectory(String prefix, String localPath) throws IOException {
+        return downloadDirectory(prefix, localPath, false);
+    }
+
+    public boolean downloadDirectory(String prefix, String localPath, boolean useBasename) throws IOException {
         List<String> keys = listKeysWithPrefix(prefix);
         if (keys.isEmpty()) {
             printWarning("未找到前缀为 " + prefix + " 的文件");
@@ -334,7 +361,7 @@ public class AliyunOSS {
 
         boolean success = true;
         for (String key : keys) {
-            if (!downloadFile(key, localPath)) {
+            if (!downloadFile(key, localPath, useBasename)) {
                 success = false;
             }
         }
@@ -397,10 +424,14 @@ public class AliyunOSS {
     }
 
     public boolean downloadFilesWithPrefix(String prefix, String rootDir) throws IOException {
+        return downloadFilesWithPrefix(prefix, rootDir, false);
+    }
+    
+    public boolean downloadFilesWithPrefix(String prefix, String rootDir, boolean useBasename) throws IOException {
         List<String> files = listKeysWithPrefix(prefix);
         boolean allSuccess = true;
         for (String file : files) {
-            if (!downloadFile(file, rootDir)) {
+            if (!downloadFile(file, rootDir, useBasename)) {
                 allSuccess = false;
             }
         }
@@ -465,5 +496,146 @@ public class AliyunOSS {
                 return null;
             }
         }
+    }
+    
+    // 新增方法: 检查键值是否存在
+    public boolean keyExists(String key) throws IOException {
+        String date = getDate();
+        String authorization = getAuthorizationHeader("HEAD", "", "", date, key);
+
+        Request request = new Request.Builder()
+                .url(getBaseURL() + "/" + key)
+                .head() // 使用HEAD请求，只检查资源是否存在
+                .addHeader("Date", date)
+                .addHeader("Authorization", authorization)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            boolean exists = response.isSuccessful();
+            if (exists) {
+                printInfo("键值存在: " + key);
+            } else {
+                printInfo("键值不存在: " + key);
+            }
+            return exists;
+        }
+    }
+
+    // 新增方法: 获取文件元数据
+    public Map<String, Object> getFileMetadata(String key) throws IOException {
+        String date = getDate();
+        String authorization = getAuthorizationHeader("HEAD", "", "", date, key);
+
+        Request request = new Request.Builder()
+                .url(getBaseURL() + "/" + key)
+                .head() // 使用HEAD请求获取元数据
+                .addHeader("Date", date)
+                .addHeader("Authorization", authorization)
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.isSuccessful()) {
+                Map<String, Object> metadata = new HashMap<>();
+                
+                // 提取常见的元数据
+                Headers headers = response.headers();
+                metadata.put("content_length", headers.get("Content-Length") != null 
+                        ? Long.parseLong(headers.get("Content-Length")) : 0);
+                metadata.put("content_type", headers.get("Content-Type"));
+                metadata.put("etag", headers.get("ETag"));
+                metadata.put("last_modified", headers.get("Last-Modified"));
+                
+                // 获取所有以x-oss-meta开头的自定义元数据
+                for (String name : headers.names()) {
+                    if (name.toLowerCase().startsWith("x-oss-meta-")) {
+                        String metaName = name.substring("x-oss-meta-".length());
+                        metadata.put(metaName, headers.get(name));
+                    }
+                }
+                
+                printInfo("成功获取文件元数据：" + key);
+                return metadata;
+            } else {
+                if (response.code() == 404) {
+                    printWarning("文件不存在：" + key);
+                } else {
+                    printWarning("获取文件元数据失败：" + response.message());
+                }
+                return null;
+            }
+        }
+    }
+
+    // 修改后的方法: 复制对象
+    public boolean copyObject(String sourceKey, String targetKey) throws IOException {
+        // 首先检查源对象是否存在
+        if (!keyExists(sourceKey)) {
+            printWarning("源文件不存在：" + sourceKey);
+            return false;
+        }
+        
+        // 检查是否是文本文件
+        Map<String, Object> metadata = getFileMetadata(sourceKey);
+        if (metadata == null) {
+            printWarning("获取源文件元数据失败：" + sourceKey);
+            return false;
+        }
+        
+        String contentType = (String) metadata.get("content_type");
+        if (contentType != null && contentType.startsWith("text/")) {
+            // 对于文本文件，使用readFileContent和uploadText
+            String content = readFileContent(sourceKey);
+            if (content == null) {
+                printWarning("读取源文件内容失败：" + sourceKey);
+                return false;
+            }
+            
+            boolean success = uploadText(targetKey, content);
+            if (success) {
+                printInfo("成功复制文本对象：" + sourceKey + " -> " + targetKey);
+            } else {
+                printWarning("复制文本对象失败：无法上传到目标位置 " + targetKey);
+            }
+            
+            return success;
+        } else {
+            // 对于二进制文件，使用临时文件进行下载和上传
+            File tempFile = null;
+            try {
+                // 创建临时文件
+                tempFile = File.createTempFile("oss_copy_", ".tmp");
+                
+                // 下载源文件到临时文件
+                boolean downloadSuccess = downloadFile(sourceKey, tempFile.getAbsolutePath());
+                if (!downloadSuccess) {
+                    printWarning("下载源文件失败：" + sourceKey);
+                    return false;
+                }
+                
+                // 上传临时文件到目标位置
+                boolean uploadSuccess = uploadFile(targetKey, tempFile.getAbsolutePath());
+                if (uploadSuccess) {
+                    printInfo("成功复制二进制对象：" + sourceKey + " -> " + targetKey);
+                } else {
+                    printWarning("复制二进制对象失败：无法上传到目标位置 " + targetKey);
+                }
+                
+                return uploadSuccess;
+            } finally {
+                // 清理临时文件
+                if (tempFile != null && tempFile.exists()) {
+                    tempFile.delete();
+                }
+            }
+        }
+    }
+
+    // 新增方法: 移动/重命名对象
+    public boolean moveObject(String sourceKey, String targetKey) throws IOException {
+        // 通过复制然后删除源文件来实现移动
+        if (copyObject(sourceKey, targetKey)) {
+            return deleteFile(sourceKey);
+        }
+        return false;
     }
 } 

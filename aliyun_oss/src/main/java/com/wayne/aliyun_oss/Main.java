@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     private static final String OSS_ENDPOINT = "xxx";
@@ -149,6 +150,75 @@ public class Main {
             oss.deleteFilesWithPrefix("1/");
             oss.deleteFilesWithPrefix("2/");
             oss.deleteFilesWithPrefix("test_dir/");
+
+            // 13. 测试新增的键值存在检查功能
+            System.out.println("\n13. 测试键值存在检查");
+            // 先上传一个测试文件
+            oss.uploadText("key_exists_test.txt", "用于测试键值存在性的文件");
+            // 检查存在的文件
+            boolean keyExists = oss.keyExists("key_exists_test.txt");
+            System.out.println("key_exists_test.txt 存在: " + keyExists);
+            // 检查不存在的文件
+            boolean keyNotExists = oss.keyExists("not_exists_file.txt");
+            System.out.println("not_exists_file.txt 存在: " + keyNotExists);
+
+            // 14. 测试获取文件元数据
+            System.out.println("\n14. 测试获取文件元数据");
+            Map<String, Object> metadata = oss.getFileMetadata("key_exists_test.txt");
+            if (metadata != null) {
+                System.out.println("文件元数据:");
+                for (Map.Entry<String, Object> entry : metadata.entrySet()) {
+                    System.out.println("  " + entry.getKey() + ": " + entry.getValue());
+                }
+            }
+
+            // 15. 测试复制对象
+            System.out.println("\n15. 测试复制对象");
+            // 复制文件
+            boolean copySuccess = oss.copyObject("key_exists_test.txt", "key_exists_test_copy.txt");
+            System.out.println("复制结果: " + copySuccess);
+            // 验证复制后的文件内容
+            String copiedContent = oss.readFileContent("key_exists_test_copy.txt");
+            System.out.println("复制后的文件内容: " + copiedContent);
+
+            // 16. 测试移动对象
+            System.out.println("\n16. 测试移动对象");
+            // 移动文件
+            boolean moveSuccess = oss.moveObject("key_exists_test_copy.txt", "key_exists_test_moved.txt");
+            System.out.println("移动结果: " + moveSuccess);
+            // 验证源文件不存在
+            boolean srcExists = oss.keyExists("key_exists_test_copy.txt");
+            System.out.println("源文件仍然存在: " + srcExists);
+            // 验证目标文件存在
+            boolean destExists = oss.keyExists("key_exists_test_moved.txt");
+            System.out.println("目标文件存在: " + destExists);
+
+            // 17. 测试下载文件使用 useBasename=true
+            System.out.println("\n17. 测试下载文件使用basename");
+            File flatDir = new File(downloadDir, "flat");
+            if (!flatDir.exists()) {
+                flatDir.mkdirs();
+            }
+            // 使用 useBasename=true 下载文件
+            oss.downloadFile("test_dir/subdir/file3.txt", flatDir.getAbsolutePath(), true);
+            System.out.println("文件应当被下载为: " + new File(flatDir, "file3.txt").getAbsolutePath());
+            
+            // 18. 测试下载目录使用 useBasename=true
+            System.out.println("\n18. 测试下载目录使用basename");
+            File flatDir2 = new File(downloadDir, "flat2");
+            if (!flatDir2.exists()) {
+                flatDir2.mkdirs();
+            }
+            // 重新上传测试目录
+            oss.uploadDirectory(testDir.getAbsolutePath(), "test_dir_download");
+            // 使用 useBasename=true 下载目录
+            oss.downloadDirectory("test_dir_download/", flatDir2.getAbsolutePath(), true);
+            System.out.println("所有文件应当被平铺下载到: " + flatDir2.getAbsolutePath());
+
+            // 清理测试文件
+            oss.deleteFile("key_exists_test.txt");
+            oss.deleteFile("key_exists_test_moved.txt");
+            oss.deleteFilesWithPrefix("test_dir_download/");
 
             System.out.println("\n所有测试完成");
         } catch (IOException e) {
