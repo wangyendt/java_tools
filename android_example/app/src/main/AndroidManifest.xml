@@ -18,7 +18,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
-        android:requestLegacyExternalStorage="true">
+        android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true">
         
         <activity
             android:name=".MainActivity"
@@ -28,6 +29,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <!-- 跨语言通信测试Activity -->
+        <activity
+            android:name=".CrossCommActivity"
+            android:exported="false"
+            android:label="跨语言通信测试"
+            android:parentActivityName=".MainActivity" />
     </application>
 
 </manifest>

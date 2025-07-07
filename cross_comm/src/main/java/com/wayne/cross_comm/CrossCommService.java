@@ -4,28 +4,23 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wayne.aliyun_oss.AliyunOSS;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import okhttp3.*;
+import okio.ByteString;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.net.NetworkInterface;
-import java.net.URI;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * 跨语言、多设备通信服务 - Java客户端实现
+ * 跨语言、多设备通信服务 - Java客户端实现 (Android兼容)
  * 
  * @author Wayne
  * @since 1.0.0
  */
 public class CrossCommService {
     
-    private static final Logger logger = LoggerFactory.getLogger(CrossCommService.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
     private final String serverIp;
@@ -33,7 +28,8 @@ public class CrossCommService {
     private final String clientId;
     private final int heartbeatInterval; // 心跳间隔（秒）
     
-    private WebSocketClient webSocketClient;
+    private OkHttpClient okHttpClient;
+    private WebSocket webSocket;
     private boolean isConnected = false;
     private ScheduledExecutorService heartbeatExecutor;
     private ScheduledFuture<?> heartbeatTask;
@@ -63,13 +59,20 @@ public class CrossCommService {
                            String ossEndpoint, String ossBucketName, String ossAccessKeyId, String ossAccessKeySecret) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
-        this.clientId = clientId != null ? clientId : generateClientId();
+        this.clientId = clientId != null ? clientId : PlatformUtils.generateClientId();
         this.heartbeatInterval = heartbeatInterval;
+        
+        // 初始化OkHttp客户端
+        this.okHttpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.MILLISECONDS) // WebSocket保持连接
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build();
         
         // 初始化OSS服务（使用传入的配置）
         initOSSService(ossEndpoint, ossBucketName, ossAccessKeyId, ossAccessKeySecret);
         
-        logger.info("CrossCommService initialized: clientId={}", this.clientId);
+        PlatformUtils.logInfo("CrossCommService initialized: clientId=" + this.clientId);
     }
     
     /**
@@ -83,8 +86,15 @@ public class CrossCommService {
     public CrossCommService(String serverIp, int serverPort, String clientId, int heartbeatInterval) {
         this.serverIp = serverIp;
         this.serverPort = serverPort;
-        this.clientId = clientId != null ? clientId : generateClientId();
+        this.clientId = clientId != null ? clientId : PlatformUtils.generateClientId();
         this.heartbeatInterval = heartbeatInterval;
+        
+        // 初始化OkHttp客户端
+        this.okHttpClient = new OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build();
         
         // 初始化OSS服务（从环境变量获取OSS配置）
         String endpoint = System.getenv("OSS_ENDPOINT");
@@ -93,7 +103,7 @@ public class CrossCommService {
         String accessKeySecret = System.getenv("OSS_ACCESS_KEY_SECRET");
         initOSSService(endpoint, bucketName, accessKeyId, accessKeySecret);
         
-        logger.info("CrossCommService initialized: clientId={}", this.clientId);
+        PlatformUtils.logInfo("CrossCommService initialized: clientId=" + this.clientId);
     }
     
     /**
@@ -137,47 +147,24 @@ public class CrossCommService {
     }
     
     /**
-     * 生成客户端唯一ID
-     * 
-     * @return 客户端ID
-     */
-    private String generateClientId() {
-        try {
-            // 获取MAC地址
-            byte[] mac = NetworkInterface.getByInetAddress(
-                java.net.InetAddress.getLocalHost()).getHardwareAddress();
-            
-            StringBuilder macStr = new StringBuilder();
-            if (mac != null) {
-                for (byte b : mac) {
-                    macStr.append(String.format("%02x", b));
-                }
-            }
-            
-            // 生成随机ID
-            String randomId = UUID.randomUUID().toString().substring(0, 8);
-            return macStr.toString() + "_" + randomId;
-        } catch (Exception e) {
-            // 如果获取MAC地址失败，使用UUID
-            return "java_" + UUID.randomUUID().toString().substring(0, 16);
-        }
-    }
-    
-    /**
      * 连接到服务器
      * 
      * @return 是否连接成功
      */
     public boolean connect() {
         try {
-            URI serverUri = new URI("ws://" + serverIp + ":" + serverPort);
-            System.out.println("正在连接到服务器: " + serverUri);
+            String serverUrl = "ws://" + serverIp + ":" + serverPort;
+            System.out.println("正在连接到服务器: " + serverUrl);
             
-            webSocketClient = new WebSocketClient(serverUri) {
+            Request request = new Request.Builder()
+                .url(serverUrl)
+                .build();
+            
+            WebSocketListener listener = new WebSocketListener() {
                 @Override
-                public void onOpen(ServerHandshake handshake) {
+                public void onOpen(WebSocket webSocket, Response response) {
                     System.out.println("✓ WebSocket连接已建立！");
-                    logger.info("WebSocket连接已建立");
+                    PlatformUtils.logInfo("WebSocket连接已建立");
                     isConnected = true;
                     
                     // 发送登录消息
@@ -187,51 +174,72 @@ public class CrossCommService {
                         System.out.println("✓ 客户端已登录，ID: " + clientId);
                     } catch (Exception e) {
                         System.out.println("✗ 发送登录消息失败: " + e.getMessage());
-                        logger.error("发送登录消息失败", e);
+                        PlatformUtils.logError("发送登录消息失败", e);
                     }
                 }
                 
                 @Override
-                public void onMessage(String message) {
+                public void onMessage(WebSocket webSocket, String text) {
                     try {
-                        handleIncomingMessage(message);
+                        handleIncomingMessage(text);
                     } catch (Exception e) {
                         System.out.println("✗ 处理接收消息失败: " + e.getMessage());
-                        logger.error("处理接收消息失败", e);
+                        PlatformUtils.logError("处理接收消息失败", e);
                     }
                 }
                 
                 @Override
-                public void onClose(int code, String reason, boolean remote) {
+                public void onMessage(WebSocket webSocket, ByteString bytes) {
+                    // 处理二进制消息（如果需要）
+                    onMessage(webSocket, bytes.utf8());
+                }
+                
+                @Override
+                public void onClosing(WebSocket webSocket, int code, String reason) {
+                    System.out.println("⚠ WebSocket连接正在关闭: code=" + code + ", reason=" + reason);
+                    isConnected = false;
+                }
+                
+                @Override
+                public void onClosed(WebSocket webSocket, int code, String reason) {
                     System.out.println("⚠ WebSocket连接已关闭: code=" + code + ", reason=" + reason);
-                    logger.info("WebSocket连接已关闭: code={}, reason={}, remote={}", code, reason, remote);
+                    PlatformUtils.logInfo("WebSocket连接已关闭: code=" + code + ", reason=" + reason);
                     isConnected = false;
                     stopHeartbeat();
                 }
                 
                 @Override
-                public void onError(Exception ex) {
-                    System.out.println("✗ WebSocket连接错误: " + ex.getMessage());
-                    logger.error("WebSocket连接错误", ex);
+                public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                    System.out.println("✗ WebSocket连接错误: " + t.getMessage());
+                    PlatformUtils.logError("WebSocket连接错误", t);
                     isConnected = false;
+                    stopHeartbeat();
                 }
             };
             
+            this.webSocket = okHttpClient.newWebSocket(request, listener);
+            
+            // 等待连接建立
             System.out.println("等待连接建立（最多5秒）...");
-            boolean connected = webSocketClient.connectBlocking(5, TimeUnit.SECONDS);
-            if (!connected) {
+            int waitTime = 0;
+            while (!isConnected && waitTime < 5000) {
+                Thread.sleep(100);
+                waitTime += 100;
+            }
+            
+            if (!isConnected) {
                 System.out.println("✗ 连接服务器超时");
-                logger.error("连接服务器超时");
+                PlatformUtils.logError("连接服务器超时");
                 return false;
             }
             
             System.out.println("✓ 客户端已成功连接到服务器");
-            logger.info("客户端 {} 已连接到服务器 {}:{}", clientId, serverIp, serverPort);
+            PlatformUtils.logInfo("客户端 " + clientId + " 已连接到服务器 " + serverIp + ":" + serverPort);
             return true;
             
         } catch (Exception e) {
             System.out.println("✗ 连接服务器失败: " + e.getMessage());
-            logger.error("连接服务器失败", e);
+            PlatformUtils.logError("连接服务器失败", e);
             return false;
         }
     }
@@ -240,7 +248,7 @@ public class CrossCommService {
      * 断开连接
      */
     public void disconnect() {
-        if (isConnected && webSocketClient != null) {
+        if (isConnected && webSocket != null) {
             try {
                 // 发送登出消息
                 sendLogoutMessage();
@@ -249,11 +257,11 @@ public class CrossCommService {
                 stopHeartbeat();
                 
                 // 关闭连接
-                webSocketClient.closeBlocking();
+                webSocket.close(1000, "Client disconnect");
                 
-                logger.info("客户端 {} 已断开连接", clientId);
+                PlatformUtils.logInfo("客户端 " + clientId + " 已断开连接");
             } catch (Exception e) {
-                logger.error("断开连接时发生错误", e);
+                PlatformUtils.logError("断开连接时发生错误", e);
             }
         }
     }
@@ -271,8 +279,8 @@ public class CrossCommService {
             System.currentTimeMillis() / 1000.0
         );
         
-        webSocketClient.send(loginMsg.toJson());
-        logger.debug("发送登录消息");
+        webSocket.send(loginMsg.toJson());
+        PlatformUtils.logDebug("发送登录消息");
     }
     
     /**
@@ -288,8 +296,8 @@ public class CrossCommService {
             System.currentTimeMillis() / 1000.0
         );
         
-        webSocketClient.send(logoutMsg.toJson());
-        logger.debug("发送登出消息");
+        webSocket.send(logoutMsg.toJson());
+        PlatformUtils.logDebug("发送登出消息");
     }
     
     /**
@@ -323,11 +331,11 @@ public class CrossCommService {
                     sendHeartbeat();
                 }
             } catch (Exception e) {
-                logger.error("发送心跳失败", e);
+                PlatformUtils.logError("发送心跳失败", e);
             }
         }, heartbeatInterval, heartbeatInterval, TimeUnit.SECONDS);
         
-        logger.debug("心跳任务已启动，间隔: {} 秒", heartbeatInterval);
+        PlatformUtils.logDebug("心跳任务已启动，间隔: " + heartbeatInterval + " 秒");
     }
     
     /**
@@ -340,7 +348,7 @@ public class CrossCommService {
         if (heartbeatExecutor != null) {
             heartbeatExecutor.shutdown();
         }
-        logger.debug("心跳任务已停止");
+        PlatformUtils.logDebug("心跳任务已停止");
     }
     
     /**
@@ -356,8 +364,8 @@ public class CrossCommService {
             System.currentTimeMillis() / 1000.0
         );
         
-        webSocketClient.send(heartbeatMsg.toJson());
-        logger.trace("发送心跳消息");
+        webSocket.send(heartbeatMsg.toJson());
+        PlatformUtils.logDebug("发送心跳消息");
     }
     
     /**
@@ -393,14 +401,14 @@ public class CrossCommService {
                         handler.handle(message);
                     } catch (Exception e) {
                         System.out.println("✗ 消息处理器执行失败: " + e.getMessage());
-                        logger.error("消息处理器执行失败", e);
+                        PlatformUtils.logError("消息处理器执行失败", e);
                     }
                 }
             }
             
         } catch (JsonProcessingException e) {
             System.out.println("✗ 解析接收消息失败: " + e.getMessage());
-            logger.error("解析接收消息失败: {}", messageJson, e);
+            PlatformUtils.logError("解析接收消息失败: " + messageJson, e);
         }
     }
     
@@ -416,10 +424,9 @@ public class CrossCommService {
             Map<String, Object> clientListData = objectMapper.convertValue(contentNode, Map.class);
             lastClientList = clientListData;
             
-            logger.info("收到客户端列表，共 {} 个客户端", 
-                       clientListData.get("total_count"));
+            PlatformUtils.logInfo("收到客户端列表，共 " + clientListData.get("total_count") + " 个客户端");
         } catch (Exception e) {
-            logger.error("处理客户端列表响应失败", e);
+            PlatformUtils.logError("处理客户端列表响应失败", e);
         }
     }
     
@@ -432,8 +439,8 @@ public class CrossCommService {
      * @return 是否发送成功
      */
     public boolean sendMessage(Object content, CommMsgType msgType, String toClientId) {
-        if (!isConnected || webSocketClient == null) {
-            logger.error("客户端未连接到服务器");
+        if (!isConnected || webSocket == null) {
+            PlatformUtils.logError("客户端未连接到服务器");
             return false;
         }
         
@@ -455,18 +462,18 @@ public class CrossCommService {
                 message.setOssKey(processedContent.toString());
             }
             
-            webSocketClient.send(message.toJson());
+            webSocket.send(message.toJson());
             System.out.println("📤 已发送消息 [" + msgType.getValue() + "] 到 " + toClientId + ": " + processedContent);
-            logger.info("消息已发送: {} -> {}", msgType.getValue(), toClientId);
+            PlatformUtils.logInfo("消息已发送: " + msgType.getValue() + " -> " + toClientId);
             return true;
             
         } catch (IOException e) {
             System.out.println("✗ 文件处理失败: " + e.getMessage());
-            logger.error("文件处理失败", e);
+            PlatformUtils.logError("文件处理失败", e);
             return false;
         } catch (Exception e) {
             System.out.println("✗ 发送消息失败: " + e.getMessage());
-            logger.error("发送消息失败", e);
+            PlatformUtils.logError("发送消息失败", e);
             return false;
         }
     }
@@ -588,7 +595,7 @@ public class CrossCommService {
                 }
                 String filePath = content.toString();
                 // 生成OSS key：使用文件名 + 时间戳，避免重名冲突
-                String fileName = Paths.get(filePath).getFileName().toString();
+                String fileName = PlatformUtils.getFileName(filePath);
                 String ossKey = String.format("%s_%d_%s", clientId, System.currentTimeMillis(), fileName);
                 boolean success = ossService.uploadFile(ossKey, filePath);
                 if (success) {
@@ -604,7 +611,7 @@ public class CrossCommService {
                 String dirPath = content.toString();
                 // uploadDirectory需要两个参数：localPath和prefix
                 // 使用目录名作为OSS前缀
-                String dirName = Paths.get(dirPath).getFileName().toString();
+                String dirName = PlatformUtils.getFileName(dirPath);
                 boolean dirSuccess = ossService.uploadDirectory(dirPath, dirName);
                 if (dirSuccess) {
                     return dirName; // 返回OSS prefix
@@ -625,8 +632,8 @@ public class CrossCommService {
      * @return 客户端列表数据
      */
     public Map<String, Object> listClients(boolean onlyShowOnline, int timeoutSeconds) {
-        if (!isConnected || webSocketClient == null) {
-            logger.error("客户端未连接到服务器");
+        if (!isConnected || webSocket == null) {
+            PlatformUtils.logError("客户端未连接到服务器");
             return null;
         }
         
@@ -646,8 +653,8 @@ public class CrossCommService {
                 System.currentTimeMillis() / 1000.0
             );
             
-            webSocketClient.send(requestMsg.toJson());
-            logger.info("已发送客户端列表请求 (only_online={})", onlyShowOnline);
+            webSocket.send(requestMsg.toJson());
+            PlatformUtils.logInfo("已发送客户端列表请求 (only_online=" + onlyShowOnline + ")");
             
             // 等待响应
             long startTime = System.currentTimeMillis();
@@ -660,11 +667,11 @@ public class CrossCommService {
                 Thread.sleep(100);
             }
             
-            logger.warn("请求客户端列表超时 ({} 秒)", timeoutSeconds);
+            PlatformUtils.logWarn("请求客户端列表超时 (" + timeoutSeconds + " 秒)");
             return null;
             
         } catch (Exception e) {
-            logger.error("请求客户端列表失败", e);
+            PlatformUtils.logError("请求客户端列表失败", e);
             return null;
         }
     }
@@ -686,16 +693,16 @@ public class CrossCommService {
      */
     public void registerMessageHandlers(Object handlerObject) {
         Class<?> clazz = handlerObject.getClass();
-        Method[] methods = clazz.getDeclaredMethods();
+        Method[] methods = PlatformUtils.getDeclaredMethods(clazz);
         
         for (Method method : methods) {
-            MessageListener annotation = method.getAnnotation(MessageListener.class);
-            if (annotation != null) {
+            if (PlatformUtils.hasAnnotation(method, MessageListener.class)) {
+                MessageListener annotation = PlatformUtils.getAnnotation(method, MessageListener.class);
+                
                 // 检查方法签名
                 if (method.getParameterCount() != 1 || 
                     !method.getParameterTypes()[0].equals(Message.class)) {
-                    logger.warn("消息处理方法 {} 的签名不正确，应该接受一个Message参数", 
-                               method.getName());
+                    PlatformUtils.logWarn("消息处理方法 " + method.getName() + " 的签名不正确，应该接受一个Message参数");
                     continue;
                 }
                 
@@ -705,7 +712,7 @@ public class CrossCommService {
                 );
                 messageHandlers.add(handler);
                 
-                logger.info("注册消息处理器: {}.{}", clazz.getSimpleName(), method.getName());
+                PlatformUtils.logInfo("注册消息处理器: " + clazz.getSimpleName() + "." + method.getName());
             }
         }
     }
@@ -795,6 +802,9 @@ public class CrossCommService {
         
         private String downloadFileFromOSS(String ossKey, CommMsgType msgType) {
             try {
+                // 确保下载目录存在
+                PlatformUtils.createDirectories(downloadDirectory);
+                
                 if (msgType == CommMsgType.FOLDER) {
                     // 下载文件夹
                     boolean success = ossService.downloadFilesWithPrefix(ossKey, downloadDirectory);
@@ -804,7 +814,7 @@ public class CrossCommService {
                     boolean success = ossService.downloadFile(ossKey, downloadDirectory);
                     if (success) {
                         // 返回本地文件完整路径
-                        return downloadDirectory + "/" + ossKey;
+                        return downloadDirectory + File.separator + ossKey;
                     }
                     return null;
                 }
@@ -814,4 +824,4 @@ public class CrossCommService {
             }
         }
     }
-} 
+}

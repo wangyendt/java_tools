@@ -27,10 +27,11 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     
-    implementation('com.wayne:lark-custom-bot:1.1.1')
-    implementation('com.wayne:lark-bot:1.0.6')
-    implementation('com.wayne:aliyun_oss:1.1.2')
+    implementation('com.wayne:lark_custom_bot:1.1.1')
+    implementation('com.wayne:lark_bot:1.0.6')
+    implementation('com.wayne:aliyun_oss:1.1.3')
     implementation('com.wayne:openai:1.0.0')
+    implementation('com.wayne:cross_comm:1.0.7')  // 跨语言通信库 (Android兼容)
 
     // Jackson 依赖
     implementation 'com.fasterxml.jackson.core:jackson-core:2.15.3'

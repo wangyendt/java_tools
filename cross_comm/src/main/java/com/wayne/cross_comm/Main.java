@@ -1,8 +1,5 @@
 package com.wayne.cross_comm;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Scanner;
 
@@ -13,8 +10,6 @@ import java.util.Scanner;
  * @since 1.0.0
  */
 public class Main {
-    
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
     
     // 服务器配置 - 静态变量，方便修改
     private static final String SERVER_IP = "localhost";
@@ -30,8 +25,8 @@ public class Main {
     private static final String OSS_ACCESS_KEY_SECRET = "xxx";
     
     public static void main(String[] args) {
-        logger.info("=== 跨语言通信服务 Java 客户端测试 ===");
-        logger.info("服务器配置: {}:{}", SERVER_IP, SERVER_PORT);
+        PlatformUtils.logInfo("=== 跨语言通信服务 Java 客户端测试 ===");
+        PlatformUtils.logInfo("服务器配置: " + SERVER_IP + ":" + SERVER_PORT);
         
         if (args.length == 0) {
             printUsage();
@@ -49,7 +44,7 @@ public class Main {
                 runSenderMode();
                 break;
             default:
-                logger.error("未知模式: {}", mode);
+                PlatformUtils.logError("未知模式: " + mode);
                 printUsage();
         }
     }
@@ -71,14 +66,14 @@ public class Main {
      * 运行监听模式 - 只接收和处理消息
      */
     private static void runListenerMode() {
-        logger.info("=== 监听模式 - 只接收消息 ===");
+        PlatformUtils.logInfo("=== 监听模式 - 只接收消息 ===");
         
         // 创建通信服务实例（使用静态OSS配置）
         CrossCommService client = new CrossCommService(
             SERVER_IP, SERVER_PORT, "java_listener", HEARTBEAT_INTERVAL,
             OSS_ENDPOINT, OSS_BUCKET_NAME, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET
         );
-        logger.info("客户端ID: {}", client.getClientId());
+        PlatformUtils.logInfo("客户端ID: " + client.getClientId());
         
         // 创建消息处理器类
         MessageHandlerExample handlers = new MessageHandlerExample();
@@ -90,12 +85,12 @@ public class Main {
             // 连接到服务器
             boolean connected = client.connect();
             if (!connected) {
-                logger.error("连接服务器失败");
+                PlatformUtils.logError("连接服务器失败");
                 return;
             }
             
-            logger.info("连接成功！开始监听消息...");
-            logger.info("按 Ctrl+C 退出程序");
+            PlatformUtils.logInfo("连接成功！开始监听消息...");
+            PlatformUtils.logInfo("按 Ctrl+C 退出程序");
             
             // 等待连接稳定
             Thread.sleep(1000);
@@ -105,7 +100,7 @@ public class Main {
             
             // 保持程序运行，持续监听消息
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                logger.info("正在关闭监听客户端...");
+                PlatformUtils.logInfo("正在关闭监听客户端...");
                 client.disconnect();
             }));
             
@@ -117,16 +112,16 @@ public class Main {
                 if (System.currentTimeMillis() % 30000 < 5000) { // 大约每30秒执行一次
                     Map<String, Object> onlineClients = client.listOnlineClients(3);
                     if (onlineClients != null) {
-                        logger.info("当前在线客户端数量: {}", onlineClients.get("total_count"));
+                        PlatformUtils.logInfo("当前在线客户端数量: " + onlineClients.get("total_count"));
                     }
                 }
             }
             
         } catch (Exception e) {
-            logger.error("监听模式运行时发生错误", e);
+            PlatformUtils.logError("监听模式运行时发生错误", e);
         } finally {
             client.disconnect();
-            logger.info("监听客户端已停止");
+            PlatformUtils.logInfo("监听客户端已停止");
         }
     }
     
@@ -134,14 +129,14 @@ public class Main {
      * 运行发送模式 - 可以发送消息和交互
      */
     private static void runSenderMode() {
-        logger.info("=== 发送模式 - 可发送消息 ===");
+        PlatformUtils.logInfo("=== 发送模式 - 可发送消息 ===");
         
         // 创建通信服务实例（使用静态OSS配置）
         CrossCommService client = new CrossCommService(
             SERVER_IP, SERVER_PORT, "java_sender", HEARTBEAT_INTERVAL,
             OSS_ENDPOINT, OSS_BUCKET_NAME, OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET
         );
-        logger.info("客户端ID: {}", client.getClientId());
+        PlatformUtils.logInfo("客户端ID: " + client.getClientId());
         
         // 创建消息处理器类
         MessageHandlerExample handlers = new MessageHandlerExample();
@@ -153,17 +148,17 @@ public class Main {
             // 连接到服务器
             boolean connected = client.connect();
             if (!connected) {
-                logger.error("连接服务器失败");
+                PlatformUtils.logError("连接服务器失败");
                 return;
             }
             
-            logger.info("连接成功！");
+            PlatformUtils.logInfo("连接成功！");
             
             // 等待连接稳定
             Thread.sleep(1000);
             
             // 演示发送各种类型的消息
-            logger.info("\n=== 发送消息示例 ===");
+            PlatformUtils.logInfo("\n=== 发送消息示例 ===");
             
             // 1. 发送文本消息给所有在线客户端
             client.sendMessage("Hello from Java sender!", CommMsgType.TEXT);
@@ -183,68 +178,110 @@ public class Main {
             client.sendMessage(binaryData, CommMsgType.BYTES);
             
             // 5. 文件传输示例（需要OSS配置）
-            logger.info("\n=== 文件传输示例 ===");
+            PlatformUtils.logInfo("\n=== 文件传输示例 ===");
             try {
                 // 检查测试文件是否存在
                 java.io.File testFile = new java.io.File("test_files/test.txt");
+                PlatformUtils.logInfo("检查测试文件: " + testFile.getAbsolutePath());
+                PlatformUtils.logInfo("文件存在: " + testFile.exists() + ", 大小: " + testFile.length() + " 字节");
+                
                 if (testFile.exists()) {
-                    logger.info("发送测试文件...");
-                    boolean fileSuccess = client.sendFile("test_files/test.txt");
-                    if (fileSuccess) {
-                        logger.info("✓ 测试文件发送成功");
-                    } else {
-                        logger.warn("✗ 测试文件发送失败（可能需要配置OSS）");
+                    PlatformUtils.logInfo("发送测试文件...");
+                    try {
+                        boolean fileSuccess = client.sendFile("test_files/test.txt");
+                        if (fileSuccess) {
+                            PlatformUtils.logInfo("✓ 测试文件发送成功");
+                        } else {
+                            PlatformUtils.logWarn("✗ 测试文件发送失败（可能需要配置OSS）");
+                        }
+                    } catch (Exception e) {
+                        PlatformUtils.logError("文件发送异常: " + e.getMessage(), e);
                     }
                 } else {
-                    logger.warn("测试文件不存在，跳过文件传输演示");
+                    PlatformUtils.logWarn("测试文件不存在，跳过文件传输演示");
+                }
+                
+                // 测试图片发送
+                java.io.File testImage = new java.io.File("test_files/test_image.bmp");
+                PlatformUtils.logInfo("检查测试图片: " + testImage.getAbsolutePath());
+                PlatformUtils.logInfo("图片存在: " + testImage.exists() + ", 大小: " + testImage.length() + " 字节");
+                
+                if (testImage.exists()) {
+                    PlatformUtils.logInfo("发送测试图片...");
+                    try {
+                        boolean imageSuccess = client.sendImage("test_files/test_image.bmp");
+                        if (imageSuccess) {
+                            PlatformUtils.logInfo("✓ 测试图片发送成功");
+                        } else {
+                            PlatformUtils.logWarn("✗ 测试图片发送失败");
+                        }
+                    } catch (Exception e) {
+                        PlatformUtils.logError("图片发送异常: " + e.getMessage(), e);
+                    }
                 }
                 
                 // 如果test_files目录存在，尝试发送文件夹
                 java.io.File testDir = new java.io.File("test_files");
+                PlatformUtils.logInfo("检查测试目录: " + testDir.getAbsolutePath());
+                PlatformUtils.logInfo("目录存在: " + testDir.exists() + ", 是目录: " + testDir.isDirectory());
+                
                 if (testDir.exists() && testDir.isDirectory()) {
-                    logger.info("发送测试文件夹...");
-                    boolean dirSuccess = client.sendDirectory("test_files");
-                    if (dirSuccess) {
-                        logger.info("✓ 测试文件夹发送成功");
-                    } else {
-                        logger.warn("✗ 测试文件夹发送失败（可能需要配置OSS）");
+                    // 列出目录内容
+                    String[] files = testDir.list();
+                    if (files != null) {
+                        PlatformUtils.logInfo("目录包含 " + files.length + " 个文件:");
+                        for (String file : files) {
+                            PlatformUtils.logInfo("  - " + file);
+                        }
+                    }
+                    
+                    PlatformUtils.logInfo("发送测试文件夹...");
+                    try {
+                        boolean dirSuccess = client.sendDirectory("test_files");
+                        if (dirSuccess) {
+                            PlatformUtils.logInfo("✓ 测试文件夹发送成功");
+                        } else {
+                            PlatformUtils.logWarn("✗ 测试文件夹发送失败");
+                        }
+                    } catch (Exception e) {
+                        PlatformUtils.logError("文件夹发送异常: " + e.getMessage(), e);
                     }
                 }
             } catch (Exception e) {
-                logger.warn("文件传输演示失败: {}", e.getMessage());
+                PlatformUtils.logError("文件传输演示失败: " + e.getMessage(), e);
             }
             
             // 等待一下让消息发送完成
             Thread.sleep(500);
             
             // 6. 获取客户端列表
-            logger.info("\n=== 获取客户端列表示例 ===");
+            PlatformUtils.logInfo("\n=== 获取客户端列表示例 ===");
             
             // 获取所有客户端（包括离线）
             Map<String, Object> allClients = client.listClients(false, 5);
             if (allClients != null) {
-                logger.info("所有客户端数量: {}", allClients.get("total_count"));
+                PlatformUtils.logInfo("所有客户端数量: " + allClients.get("total_count"));
                 printClientList(allClients);
             }
             
             // 获取在线客户端
             Map<String, Object> onlineClients = client.listOnlineClients(5);
             if (onlineClients != null) {
-                logger.info("在线客户端数量: {}", onlineClients.get("total_count"));
+                PlatformUtils.logInfo("在线客户端数量: " + onlineClients.get("total_count"));
                 printClientList(onlineClients);
             }
             
             // 交互式命令行
-            logger.info("\n=== 交互式命令行 ===");
-            logger.info("输入消息发送给所有客户端");
-            logger.info("特殊命令:");
-            logger.info("  list         - 获取在线客户端列表");
-            logger.info("  json:内容    - 发送JSON消息");
-            logger.info("  bytes:内容   - 发送字节消息");
-            logger.info("  file:路径    - 发送文件");
-            logger.info("  image:路径   - 发送图片");
-            logger.info("  folder:路径  - 发送文件夹");
-            logger.info("  quit         - 退出程序");
+            PlatformUtils.logInfo("\n=== 交互式命令行 ===");
+            PlatformUtils.logInfo("输入消息发送给所有客户端");
+            PlatformUtils.logInfo("特殊命令:");
+            PlatformUtils.logInfo("  list         - 获取在线客户端列表");
+            PlatformUtils.logInfo("  json:内容    - 发送JSON消息");
+            PlatformUtils.logInfo("  bytes:内容   - 发送字节消息");
+            PlatformUtils.logInfo("  file:路径    - 发送文件");
+            PlatformUtils.logInfo("  image:路径   - 发送图片");
+            PlatformUtils.logInfo("  folder:路径  - 发送文件夹");
+            PlatformUtils.logInfo("  quit         - 退出程序");
             
             Scanner scanner = new Scanner(System.in);
             while (true) {
@@ -257,61 +294,61 @@ public class Main {
                     // 获取客户端列表
                     Map<String, Object> clients = client.listOnlineClients(5);
                     if (clients != null) {
-                        logger.info("在线客户端数量: {}", clients.get("total_count"));
+                        PlatformUtils.logInfo("在线客户端数量: " + clients.get("total_count"));
                         printClientList(clients);
                     } else {
-                        logger.warn("获取客户端列表失败");
+                        PlatformUtils.logWarn("获取客户端列表失败");
                     }
                 } else if (input.startsWith("json:")) {
                     // 发送JSON消息
                     String jsonContent = input.substring(5);
                     client.sendMessage(jsonContent, CommMsgType.JSON);
-                    logger.info("JSON消息已发送: {}", jsonContent);
+                    PlatformUtils.logInfo("JSON消息已发送: " + jsonContent);
                 } else if (input.startsWith("bytes:")) {
                     // 发送字节消息
                     String bytesContent = input.substring(6);
                     client.sendMessage(bytesContent.getBytes(), CommMsgType.BYTES);
-                    logger.info("字节消息已发送: {}", bytesContent);
+                    PlatformUtils.logInfo("字节消息已发送: " + bytesContent);
                 } else if (input.startsWith("file:")) {
                     // 发送文件
                     String filePath = input.substring(5);
                     boolean success = client.sendFile(filePath);
                     if (success) {
-                        logger.info("文件已发送: {}", filePath);
+                        PlatformUtils.logInfo("文件已发送: " + filePath);
                     } else {
-                        logger.error("文件发送失败: {}", filePath);
+                        PlatformUtils.logError("文件发送失败: " + filePath);
                     }
                 } else if (input.startsWith("image:")) {
                     // 发送图片
                     String imagePath = input.substring(6);
                     boolean success = client.sendImage(imagePath);
                     if (success) {
-                        logger.info("图片已发送: {}", imagePath);
+                        PlatformUtils.logInfo("图片已发送: " + imagePath);
                     } else {
-                        logger.error("图片发送失败: {}", imagePath);
+                        PlatformUtils.logError("图片发送失败: " + imagePath);
                     }
                 } else if (input.startsWith("folder:")) {
                     // 发送文件夹
                     String folderPath = input.substring(7);
                     boolean success = client.sendDirectory(folderPath);
                     if (success) {
-                        logger.info("文件夹已发送: {}", folderPath);
+                        PlatformUtils.logInfo("文件夹已发送: " + folderPath);
                     } else {
-                        logger.error("文件夹发送失败: {}", folderPath);
+                        PlatformUtils.logError("文件夹发送失败: " + folderPath);
                     }
                 } else if (!input.isEmpty()) {
                     // 发送普通文本消息
                     client.sendMessage(input, CommMsgType.TEXT);
-                    logger.info("文本消息已发送: {}", input);
+                    PlatformUtils.logInfo("文本消息已发送: " + input);
                 }
             }
             
         } catch (Exception e) {
-            logger.error("发送模式运行时发生错误", e);
+            PlatformUtils.logError("发送模式运行时发生错误", e);
         } finally {
             // 断开连接
             client.disconnect();
-            logger.info("发送客户端已停止");
+            PlatformUtils.logInfo("发送客户端已停止");
         }
     }
     
@@ -330,13 +367,13 @@ public class Main {
                 for (Map<String, Object> clientInfo : clients) {
                     String clientId = (String) clientInfo.get("client_id");
                     String status = (String) clientInfo.get("status");
-                    logger.info("  - {}: {}", clientId, status);
+                    PlatformUtils.logInfo("  - " + clientId + ": " + status);
                 }
             } else {
-                logger.info("  (无客户端)");
+                PlatformUtils.logInfo("  (无客户端)");
             }
         } catch (Exception e) {
-            logger.error("打印客户端列表失败", e);
+            PlatformUtils.logError("打印客户端列表失败", e);
         }
     }
     
@@ -345,8 +382,6 @@ public class Main {
      */
     public static class MessageHandlerExample {
         
-        private final Logger logger = LoggerFactory.getLogger(MessageHandlerExample.class);
-        
         /**
          * 处理文本消息
          * 
@@ -354,9 +389,9 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.TEXT})
         public void handleTextMessage(Message message) {
-            logger.info("📝 收到文本消息: {}", message.getContent());
-            logger.info("   来自: {}", message.getFromClientId());
-            logger.info("   时间: {}", new java.util.Date((long)(message.getTimestamp() * 1000)));
+            PlatformUtils.logInfo("📝 收到文本消息: " + message.getContent());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
+            PlatformUtils.logInfo("   时间: " + new java.util.Date((long)(message.getTimestamp() * 1000)));
         }
         
         /**
@@ -366,8 +401,8 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.JSON})
         public void handleJsonMessage(Message message) {
-            logger.info("🔍 收到JSON消息: {}", message.getContent());
-            logger.info("   来自: {}", message.getFromClientId());
+            PlatformUtils.logInfo("🔍 收到JSON消息: " + message.getContent());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
         }
         
         /**
@@ -377,8 +412,8 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.DICT})
         public void handleDictMessage(Message message) {
-            logger.info("📋 收到字典消息: {}", message.getContent());
-            logger.info("   来自: {}", message.getFromClientId());
+            PlatformUtils.logInfo("📋 收到字典消息: " + message.getContent());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
         }
         
         /**
@@ -394,11 +429,11 @@ public class Main {
                     .decode(message.getContent().toString());
                 String decodedContent = new String(decodedBytes);
                 
-                logger.info("💾 收到字节消息: {}", decodedContent);
-                logger.info("   原始长度: {} 字节", decodedBytes.length);
-                logger.info("   来自: {}", message.getFromClientId());
+                PlatformUtils.logInfo("💾 收到字节消息: " + decodedContent);
+                PlatformUtils.logInfo("   原始长度: " + decodedBytes.length + " 字节");
+                PlatformUtils.logInfo("   来自: " + message.getFromClientId());
             } catch (Exception e) {
-                logger.error("解码字节消息失败", e);
+                PlatformUtils.logError("解码字节消息失败", e);
             }
         }
         
@@ -409,9 +444,9 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.FILE}, downloadDirectory = "./downloads/files")
         public void handleFileMessage(Message message) {
-            logger.info("📁 收到文件消息: {}", message.getContent());
-            logger.info("   OSS Key: {}", message.getOssKey());
-            logger.info("   来自: {}", message.getFromClientId());
+            PlatformUtils.logInfo("📁 收到文件消息: " + message.getContent());
+            PlatformUtils.logInfo("   OSS Key: " + message.getOssKey());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
             // content字段现在包含下载后的本地文件路径
         }
         
@@ -422,9 +457,9 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.IMAGE}, downloadDirectory = "./downloads/images")
         public void handleImageMessage(Message message) {
-            logger.info("🖼️ 收到图片消息: {}", message.getContent());
-            logger.info("   OSS Key: {}", message.getOssKey());
-            logger.info("   来自: {}", message.getFromClientId());
+            PlatformUtils.logInfo("🖼️ 收到图片消息: " + message.getContent());
+            PlatformUtils.logInfo("   OSS Key: " + message.getOssKey());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
             // content字段现在包含下载后的本地图片路径
         }
         
@@ -435,9 +470,9 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.FOLDER}, downloadDirectory = "./downloads/folders")
         public void handleFolderMessage(Message message) {
-            logger.info("📂 收到文件夹消息: {}", message.getContent());
-            logger.info("   OSS Key: {}", message.getOssKey());
-            logger.info("   来自: {}", message.getFromClientId());
+            PlatformUtils.logInfo("📂 收到文件夹消息: " + message.getContent());
+            PlatformUtils.logInfo("   OSS Key: " + message.getOssKey());
+            PlatformUtils.logInfo("   来自: " + message.getFromClientId());
             // content字段现在包含下载后的本地文件夹路径
         }
         
@@ -448,10 +483,8 @@ public class Main {
          */
         @MessageListener(msgType = {CommMsgType.FILE, CommMsgType.IMAGE, CommMsgType.FOLDER})
         public void handleFileMessageInfo(Message message) {
-            logger.info("ℹ️ 文件消息信息 - 类型: {}, OSS Key: {}, 来自: {}",
-                       message.getMsgType().getValue(), 
-                       message.getOssKey(),
-                       message.getFromClientId());
+            PlatformUtils.logInfo("ℹ️ 文件消息信息 - 类型: " + message.getMsgType().getValue() + 
+                       ", OSS Key: " + message.getOssKey() + ", 来自: " + message.getFromClientId());
         }
         
         /**
@@ -461,8 +494,8 @@ public class Main {
          */
         @MessageListener(fromClientId = "python_client")
         public void handlePythonClientMessage(Message message) {
-            logger.info("🐍 收到来自Python客户端的消息: {} ({})", 
-                       message.getContent(), message.getMsgType().getValue());
+            PlatformUtils.logInfo("🐍 收到来自Python客户端的消息: " + message.getContent() + 
+                       " (" + message.getMsgType().getValue() + ")");
         }
         
         /**
@@ -473,8 +506,8 @@ public class Main {
         @MessageListener
         public void handlePythonMessages(Message message) {
             if (message.getFromClientId().toLowerCase().contains("python")) {
-                logger.info("🐍 收到Python相关客户端消息: {} 来自 {}", 
-                           message.getContent(), message.getFromClientId());
+                PlatformUtils.logInfo("🐍 收到Python相关客户端消息: " + message.getContent() + 
+                           " 来自 " + message.getFromClientId());
             }
         }
         
@@ -485,10 +518,8 @@ public class Main {
          */
         @MessageListener // 不指定过滤条件，监听所有消息
         public void handleAllMessages(Message message) {
-            logger.debug("[通用处理器] {}: {} 来自 {}", 
-                        message.getMsgType().getValue(), 
-                        message.getContent(),
-                        message.getFromClientId());
+            PlatformUtils.logDebug("[通用处理器] " + message.getMsgType().getValue() + ": " + 
+                        message.getContent() + " 来自 " + message.getFromClientId());
         }
     }
 } 

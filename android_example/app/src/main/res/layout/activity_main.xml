@@ -72,6 +72,14 @@
             android:layout_height="wrap_content"
             android:text="测试 OpenAI 聊天" />
 
+        <Button
+            android:id="@+id/btnTestCrossComm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="测试 跨语言通信 (Cross Comm)"
+            android:background="#4CAF50"
+            android:textColor="@android:color/white" />
+
     </LinearLayout>
 
 </LinearLayout>

@@ -20,3 +20,22 @@ buildscript {
 plugins {
     id 'com.android.application' version '8.1.0' apply false
 }
+
+// 配置所有子项目的仓库
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        // 添加本地 Maven 仓库支持
+        mavenLocal()
+        // GitHub Packages 仓库配置
+        maven {
+            name = "Java Tools"
+            url = uri("https://maven.pkg.github.com/wangyendt/java_tools")
+            credentials {
+                username = rootProject.findProperty("GITHUB_USERNAME") ?: System.getenv("GITHUB_USERNAME")
+                password = rootProject.findProperty("GITHUB_TOKEN") ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}

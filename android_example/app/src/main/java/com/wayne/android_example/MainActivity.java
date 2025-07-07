@@ -94,6 +94,10 @@ public class MainActivity extends AppCompatActivity {
             ChatDialog dialog = new ChatDialog(this);
             dialog.show();
         });
+
+        // 跨语言通信测试
+        Button btnTestCrossComm = findViewById(R.id.btnTestCrossComm);
+        btnTestCrossComm.setOnClickListener(v -> testCrossComm());
     }
 
     private void checkPermissions() {
@@ -651,6 +655,12 @@ public class MainActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         });
+    }
+
+    private void testCrossComm() {
+        log("启动跨语言通信测试...");
+        Intent intent = new Intent(this, CrossCommActivity.class);
+        startActivity(intent);
     }
 
     @Override
