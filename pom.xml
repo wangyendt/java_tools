@@ -40,6 +40,7 @@
         <module>lark_custom_bot</module>
         <module>lark_bot</module>
         <module>aliyun_oss</module>
+        <module>cross_comm</module>
     </modules>
 
     <properties>
